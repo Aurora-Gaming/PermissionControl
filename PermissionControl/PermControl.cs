@@ -45,7 +45,7 @@ namespace PermissionControl
             Commands.ChatCommands.Add(new Command("permcontrol", SearchPerm, "searchperm") { HelpText = "Searches for a specified permission." });
             Commands.ChatCommands.Add(new Command("permcontrol", SearchCommandInGroup, "searchgcommand") { HelpText = "Provides a list of groups with a certain command." });
             Commands.ChatCommands.Add(new Command("permcontrol", SearchPermInGroup, "searchgperm") { HelpText = "Provides a list of groups with a certain permission." });
-            Commands.ChatCommands.Add(new Command("permcontrol", findPlugins, "pluginlist") { HelpText = "Provides a list of permissions from plugin-provided commands." });
+            Commands.ChatCommands.Add(new Command("permcontrol", FindPlugins, "pluginlist") { HelpText = "Provides a list of permissions from plugin-provided commands." });
         }
         #endregion
 
@@ -99,14 +99,14 @@ namespace PermissionControl
                     args.Player.SendErrorMessage("No Commands matched your search term(s).");
             }
             else
-                args.Player.SendErrorMessage("Invalid syntax: {0}searchcommand <command>", (args.Silent ? TShock.Config.CommandSilentSpecifier : TShock.Config.CommandSpecifier));
+                args.Player.SendErrorMessage("Invalid syntax: {0}searchcommand <command>", args.Silent ? TShock.Config.Settings.CommandSilentSpecifier : TShock.Config.Settings.CommandSpecifier);
         }
 
         public void SearchPerm(CommandArgs args)
         {
             if (args.Parameters.Count > 0)
             {
-                foreach (Command cmd in TShockAPI.Commands.ChatCommands)
+                foreach (Command cmd in Commands.ChatCommands)
                 {
                     if (cmd.Names.Contains(args.Parameters[0]))
                     {
@@ -119,7 +119,7 @@ namespace PermissionControl
             }
             else
             {
-				args.Player.SendErrorMessage("Invalid syntax: {0}searchperm <command>", (args.Silent ? TShock.Config.CommandSilentSpecifier : TShock.Config.CommandSpecifier));
+				args.Player.SendErrorMessage("Invalid syntax: {0}searchperm <command>", args.Silent ? TShock.Config.Settings.CommandSilentSpecifier : TShock.Config.Settings.CommandSpecifier);
             }
         }
 
@@ -127,7 +127,7 @@ namespace PermissionControl
         {
             if (args.Parameters.Count == 0)
             {
-				args.Player.SendErrorMessage("Invalid syntax: {0}searchgcommand <command>", (args.Silent ? TShock.Config.CommandSilentSpecifier : TShock.Config.CommandSpecifier));
+				args.Player.SendErrorMessage("Invalid syntax: {0}searchgcommand <command>", args.Silent ? TShock.Config.Settings.CommandSilentSpecifier : TShock.Config.Settings.CommandSpecifier);
                 return;
             }
 
@@ -155,11 +155,11 @@ namespace PermissionControl
             }
             else if (therealcommand.Count > 1)
             {
-				TShock.Utils.SendMultipleMatchError(args.Player, therealcommand.Select(p => p.Name));
+                args.Player.SendMultipleMatchError(therealcommand.Select(p => p.Name));
             }
             else
             {
-				var perms = (from thegroup in TShock.Groups where (therealcommand[0].Permissions.Count > 0 ? thegroup.HasPermission(therealcommand[0].Permissions[0]) : true) select thegroup.Name);
+				var perms = from thegroup in TShock.Groups where therealcommand[0].Permissions.Count <= 0 || thegroup.HasPermission(therealcommand[0].Permissions[0]) select thegroup.Name;
 
 				args.Player.SendInfoMessage("Groups with the " + therealcommand[0].Name + " command:");
 				args.Player.SendInfoMessage(string.Join(", ", perms));
@@ -201,13 +201,13 @@ namespace PermissionControl
         {
             if (args.Parameters.Count != 1)
             {
-				args.Player.SendErrorMessage("Invalid syntax: {0}searchgperm <permission>", (args.Silent ? TShock.Config.CommandSilentSpecifier : TShock.Config.CommandSpecifier));
+				args.Player.SendErrorMessage("Invalid syntax: {0}searchgperm <permission>", args.Silent ? TShock.Config.Settings.CommandSilentSpecifier : TShock.Config.Settings.CommandSpecifier);
                 return;
             }
 
             string perms = args.Parameters[0];
 
-			var glist = (from thegroup in TShock.Groups where thegroup.HasPermission(perms) select thegroup.Name);
+			var glist = from thegroup in TShock.Groups where thegroup.HasPermission(perms) select thegroup.Name;
 
 			args.Player.SendInfoMessage("Groups with the " + perms + " permission:");
 			args.Player.SendInfoMessage(string.Join(", ", glist));
@@ -235,7 +235,7 @@ namespace PermissionControl
         #endregion
 
         #region FindPlugin
-        private void findPlugins(CommandArgs args)
+        private void FindPlugins(CommandArgs args)
         {
             List<string> plugincommands = new List<string>();
 
